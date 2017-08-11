@@ -6,7 +6,7 @@
   <version>@snapshot@</version>
   <vendor url="http://www.jetbrains.com">JetBrains s.r.o.</vendor>
 
-  <idea-version since-build="145.257" until-build="172.*"/>
+  <idea-version since-build="171.1" until-build="172.*"/>
 
   <depends>com.intellij.modules.java</depends>
 
@@ -477,6 +477,7 @@
     <codeInsight.parameterInfo language="kotlin" implementationClass="org.jetbrains.kotlin.idea.parameterInfo.KotlinArrayAccessParameterInfoHandler"/>
     <codeInsight.parameterInfo language="kotlin" implementationClass="org.jetbrains.kotlin.idea.parameterInfo.KotlinClassTypeArgumentInfoHandler"/>
     <codeInsight.parameterInfo language="kotlin" implementationClass="org.jetbrains.kotlin.idea.parameterInfo.KotlinFunctionTypeArgumentInfoHandler"/>
+    <codeInsight.parameterNameHints language="kotlin" implementationClass="org.jetbrains.kotlin.idea.parameterInfo.KotlinInlayParameterHintsProvider"/>
 
     <codeInsight.gotoSuper language="kotlin" implementationClass="org.jetbrains.kotlin.idea.codeInsight.GotoSuperActionHandler"/>
 
@@ -2646,10 +2647,16 @@
     <projectOpenProcessor implementation="org.jetbrains.kotlin.gradle.kdsl.GradleProjectOpenProcessor"/>
     <projectImportProvider implementation="org.jetbrains.kotlin.gradle.kdsl.GradleProjectImportProvider"/>
 
+    <codeInsight.intention.jvmCommonIntentionActionsFactory language="kotlin" implementationClass="org.jetbrains.kotlin.idea.intentions.KotlinCommonIntentionActionsFactory"/>
+
     <moduleBuilder builderClass="org.jetbrains.kotlin.gradle.kdsl.GradleModuleBuilder" />
 
     <projectService serviceInterface="org.jetbrains.uast.kotlin.KotlinUastBindingContextProviderService"
                   serviceImplementation="org.jetbrains.uast.kotlin.internal.IdeaKotlinUastBindingContextProviderService"/>
+  </extensions>
+
+  <extensions defaultExtensionNs="org.jetbrains.uast">
+    <uastLanguagePlugin implementation="org.jetbrains.uast.kotlin.KotlinUastLanguagePlugin"/>
   </extensions>
 
   <xi:include href="tipsAndTricks.xml" xpointer="xpointer(/idea-plugin/*)"/>
