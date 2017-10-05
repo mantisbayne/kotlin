@@ -16,20 +16,23 @@
 
 package org.jetbrains.kotlin.resolve.calls.tower
 
+import org.jetbrains.kotlin.builtins.isFunctionType
 import org.jetbrains.kotlin.config.LanguageFeature
 import org.jetbrains.kotlin.config.LanguageVersionSettings
-import org.jetbrains.kotlin.descriptors.CallableDescriptor
-import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
-import org.jetbrains.kotlin.descriptors.FunctionDescriptor
-import org.jetbrains.kotlin.descriptors.VariableDescriptor
+import org.jetbrains.kotlin.descriptors.*
+import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
+import org.jetbrains.kotlin.descriptors.synthetic.SyntheticMemberDescriptor
 import org.jetbrains.kotlin.diagnostics.Errors
 import org.jetbrains.kotlin.incremental.components.LookupLocation
+import org.jetbrains.kotlin.load.java.descriptors.JavaClassDescriptor
+import org.jetbrains.kotlin.load.java.descriptors.JavaMethodDescriptor
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
-import org.jetbrains.kotlin.psi.Call
-import org.jetbrains.kotlin.psi.KtReferenceExpression
+import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.DeprecationResolver
 import org.jetbrains.kotlin.resolve.TemporaryBindingTrace
+import org.jetbrains.kotlin.resolve.annotations.argumentValue
 import org.jetbrains.kotlin.resolve.calls.CallTransformer
 import org.jetbrains.kotlin.resolve.calls.CandidateResolver
 import org.jetbrains.kotlin.resolve.calls.callResolverUtil.isBinaryRemOperator
@@ -38,6 +41,7 @@ import org.jetbrains.kotlin.resolve.calls.callResolverUtil.isInfixCall
 import org.jetbrains.kotlin.resolve.calls.callUtil.createLookupLocation
 import org.jetbrains.kotlin.resolve.calls.context.*
 import org.jetbrains.kotlin.resolve.calls.inference.CoroutineInferenceSupport
+import org.jetbrains.kotlin.resolve.calls.inference.returnTypeOrNothing
 import org.jetbrains.kotlin.resolve.calls.model.KotlinCallKind
 import org.jetbrains.kotlin.resolve.calls.model.*
 import org.jetbrains.kotlin.resolve.calls.results.OverloadResolutionResultsImpl
@@ -46,19 +50,21 @@ import org.jetbrains.kotlin.resolve.calls.results.ResolutionStatus
 import org.jetbrains.kotlin.resolve.calls.smartcasts.DataFlowInfo
 import org.jetbrains.kotlin.resolve.calls.smartcasts.DataFlowValueFactory
 import org.jetbrains.kotlin.resolve.calls.tasks.*
+import org.jetbrains.kotlin.resolve.calls.util.CallMaker
 import org.jetbrains.kotlin.resolve.descriptorUtil.hasDynamicExtensionAnnotation
 import org.jetbrains.kotlin.resolve.scopes.LexicalScope
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.resolve.scopes.SyntheticScopes
+import org.jetbrains.kotlin.resolve.scopes.getDescriptorsFiltered
 import org.jetbrains.kotlin.resolve.scopes.receivers.*
-import org.jetbrains.kotlin.types.DeferredType
-import org.jetbrains.kotlin.types.ErrorUtils
+import org.jetbrains.kotlin.types.*
+import org.jetbrains.kotlin.types.checker.KotlinTypeChecker
 import org.jetbrains.kotlin.types.expressions.OperatorConventions
-import org.jetbrains.kotlin.types.isDynamic
+import org.jetbrains.kotlin.types.typeUtil.supertypes
 import org.jetbrains.kotlin.util.OperatorNameConventions
 import org.jetbrains.kotlin.utils.sure
 import java.lang.IllegalStateException
-import java.util.*
+import kotlin.collections.HashMap
 
 class NewResolutionOldInference(
         private val candidateResolver: CandidateResolver,
@@ -181,6 +187,8 @@ class NewResolutionOldInference(
             val processorForDeprecatedName = kind.createTowerProcessor(this, deprecatedName!!, tracing, scopeTower, detailedReceiver, context)
             candidates = towerResolver.runResolve(scopeTower, processorForDeprecatedName, useOrder = kind != ResolutionKind.CallableReference, name = deprecatedName)
         }
+
+        candidates = ResolvedCallCompatReplacer.replace(syntheticScopes, candidates)
 
         if (candidates.isEmpty()) {
             if (reportAdditionalDiagnosticIfNoCandidates(context, nameToResolve, kind, scopeTower, detailedReceiver)) {
