@@ -614,8 +614,9 @@ public final class StaticContext {
         return scope;
     }
 
-    private final class ScopeGenerator extends Generator<JsScope> {
+    private static Set<String> BUILTIN_JS_PROPERTIES = new HashSet<>(Arrays.asList("constructor", "prototype", "length"));
 
+    private final class ScopeGenerator extends Generator<JsScope> {
         public ScopeGenerator() {
             Rule<JsScope> generateNewScopesForClassesWithNoAncestors = descriptor -> {
                 if (!(descriptor instanceof ClassDescriptor)) {
@@ -623,6 +624,9 @@ public final class StaticContext {
                 }
                 if (getSuperclass((ClassDescriptor) descriptor) == null) {
                     JsFunction function = new JsFunction(new JsRootScope(program), new JsBlock(), descriptor.toString());
+                    for (String builtinName : BUILTIN_JS_PROPERTIES) {
+                        function.getScope().declareName(builtinName);
+                    }
                     scopeToFunction.put(function.getScope(), function);
                     return function.getScope();
                 }
