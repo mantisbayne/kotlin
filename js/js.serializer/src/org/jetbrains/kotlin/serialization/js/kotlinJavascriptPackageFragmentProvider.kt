@@ -17,13 +17,12 @@
 package org.jetbrains.kotlin.serialization.js
 
 import org.jetbrains.kotlin.contracts.ContractDeserializerImpl
-import org.jetbrains.kotlin.descriptors.ModuleDescriptor
-import org.jetbrains.kotlin.descriptors.NotFoundClasses
-import org.jetbrains.kotlin.descriptors.PackageFragmentProvider
-import org.jetbrains.kotlin.descriptors.PackageFragmentProviderImpl
+import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.deserialization.PlatformDependentDeclarationFilter
+import org.jetbrains.kotlin.descriptors.impl.EmptyPackageFragmentDescriptor
 import org.jetbrains.kotlin.incremental.components.LookupTracker
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.name.parentOrNull
 import org.jetbrains.kotlin.serialization.ProtoBuf
 import org.jetbrains.kotlin.serialization.deserialization.*
 import org.jetbrains.kotlin.storage.StorageManager
@@ -36,11 +35,24 @@ fun createKotlinJavascriptPackageFragmentProvider(
         configuration: DeserializationConfiguration,
         lookupTracker: LookupTracker
 ): PackageFragmentProvider {
-    val packageFragments = packageFragmentProtos.mapNotNull { proto ->
+    val packageFragments: MutableList<PackageFragmentDescriptor> = packageFragmentProtos.mapNotNullTo(mutableListOf()) { proto ->
         proto.fqName?.let { fqName ->
             KotlinJavascriptPackageFragment(fqName, storageManager, module, proto, header, configuration)
         }
     }
+
+    // Generate empty PackageFragmentDescriptor instances for packages that aren't mentioned in compilation units directly.
+    // For example, if there's `package foo.bar` directive, we'll get only PackageFragmentDescriptor for `foo.bar`, but
+    // none for `foo`. Various descriptor/scope code relies on presence of such package fragments, and currently we
+    // don't know if it's possible to fix this.
+    // TODO: think about fixing issues in descriptors/scopes
+    val packageFqNames = packageFragmentProtos.mapNotNullTo(mutableSetOf()) { it.fqName }
+    packageFragments += packageFragmentProtos.asSequence()
+            .mapNotNull { it.fqName }
+            .flatMap { generateSequence(it) { it.parentOrNull() } }
+            .filter { it !in packageFqNames }
+            .distinct()
+            .map { EmptyPackageFragmentDescriptor(module, it) }
 
     val provider = PackageFragmentProviderImpl(packageFragments)
 
@@ -63,7 +75,7 @@ fun createKotlinJavascriptPackageFragmentProvider(
             platformDependentDeclarationFilter = PlatformDependentDeclarationFilter.NoPlatformDependent
     )
 
-    for (packageFragment in packageFragments) {
+    for (packageFragment in packageFragments.filterIsInstance<KotlinJavascriptPackageFragment>()) {
         packageFragment.components = components
     }
 
