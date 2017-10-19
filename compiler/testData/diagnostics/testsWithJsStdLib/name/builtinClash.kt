@@ -3,6 +3,8 @@ class C {
 
     class <!JS_BUILTIN_NAME_CLASH!>length<!>
 
+    class <!JS_BUILTIN_NAME_CLASH!>`$metadata$`<!>
+
     <!JS_BUILTIN_NAME_CLASH!>fun constructor()<!> {}
 }
 
@@ -10,6 +12,8 @@ class D {
     private class <!JS_BUILTIN_NAME_CLASH!>prototype<!>
 
     private class <!JS_BUILTIN_NAME_CLASH!>length<!>
+
+    private class <!JS_BUILTIN_NAME_CLASH!>`$metadata$`<!>
 
     private fun constructor() {}
 }

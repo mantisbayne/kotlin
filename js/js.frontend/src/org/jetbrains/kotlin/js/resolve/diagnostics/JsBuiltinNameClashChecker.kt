@@ -27,7 +27,7 @@ import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.checkers.SimpleDeclarationChecker
 
 class JsBuiltinNameClashChecker(private val nameSuggestion: NameSuggestion) : SimpleDeclarationChecker {
-    private val prohibitedStaticNames = setOf("prototype", "length")
+    private val prohibitedStaticNames = setOf("prototype", "length", "\$metadata\$")
     private val prohibitedMemberNames = setOf("constructor")
 
     override fun check(
