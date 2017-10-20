@@ -35,6 +35,7 @@ import org.jetbrains.kotlin.js.config.JsConfig;
 import org.jetbrains.kotlin.js.naming.NameSuggestion;
 import org.jetbrains.kotlin.js.naming.NameSuggestionKt;
 import org.jetbrains.kotlin.js.naming.SuggestedName;
+import org.jetbrains.kotlin.js.resolve.diagnostics.JsBuiltinNameClashChecker;
 import org.jetbrains.kotlin.js.sourceMap.SourceFilePathResolver;
 import org.jetbrains.kotlin.js.translate.context.generator.Generator;
 import org.jetbrains.kotlin.js.translate.context.generator.Rule;
@@ -145,6 +146,13 @@ public final class StaticContext {
     private final SourceFilePathResolver sourceFilePathResolver;
 
     private final boolean isStdlib;
+
+    private static final Set<String> BUILTIN_JS_PROPERTIES = new HashSet<>();
+
+    static {
+        BUILTIN_JS_PROPERTIES.addAll(JsBuiltinNameClashChecker.PROHIBITED_MEMBER_NAMES);
+        BUILTIN_JS_PROPERTIES.addAll(JsBuiltinNameClashChecker.PROHIBITED_STATIC_NAMES);
+    }
 
     public StaticContext(
             @NotNull BindingTrace bindingTrace,
@@ -613,8 +621,6 @@ public final class StaticContext {
         }
         return scope;
     }
-
-    private static Set<String> BUILTIN_JS_PROPERTIES = new HashSet<>(Arrays.asList("constructor", "prototype", "length"));
 
     private final class ScopeGenerator extends Generator<JsScope> {
         public ScopeGenerator() {

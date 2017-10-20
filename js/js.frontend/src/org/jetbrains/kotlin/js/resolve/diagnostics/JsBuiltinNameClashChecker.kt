@@ -27,9 +27,6 @@ import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.checkers.SimpleDeclarationChecker
 
 class JsBuiltinNameClashChecker(private val nameSuggestion: NameSuggestion) : SimpleDeclarationChecker {
-    private val prohibitedStaticNames = setOf("prototype", "length", "\$metadata\$")
-    private val prohibitedMemberNames = setOf("constructor")
-
     override fun check(
             declaration: KtDeclaration, descriptor: DeclarationDescriptor,
             diagnosticHolder: DiagnosticSink, bindingContext: BindingContext
@@ -42,14 +39,22 @@ class JsBuiltinNameClashChecker(private val nameSuggestion: NameSuggestion) : Si
         val simpleName = suggestedName.names.single()
 
         if (descriptor is ClassDescriptor) {
-            if (simpleName in prohibitedStaticNames) {
+            if (simpleName in PROHIBITED_STATIC_NAMES) {
                 diagnosticHolder.report(ErrorsJs.JS_BUILTIN_NAME_CLASH.on(declaration, "Function.$simpleName"))
             }
         }
         else if (descriptor is CallableMemberDescriptor) {
-            if (simpleName in prohibitedMemberNames) {
+            if (simpleName in PROHIBITED_MEMBER_NAMES) {
                 diagnosticHolder.report(ErrorsJs.JS_BUILTIN_NAME_CLASH.on(declaration, "Object.prototype.$simpleName"))
             }
         }
+    }
+
+    companion object {
+        @JvmField
+        val PROHIBITED_STATIC_NAMES = setOf("prototype", "length", "\$metadata\$")
+
+        @JvmField
+        val PROHIBITED_MEMBER_NAMES = setOf("constructor")
     }
 }
