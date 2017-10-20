@@ -47,12 +47,13 @@ fun createKotlinJavascriptPackageFragmentProvider(
     // don't know if it's possible to fix this.
     // TODO: think about fixing issues in descriptors/scopes
     val packageFqNames = packageFragmentProtos.mapNotNullTo(mutableSetOf()) { it.fqName }
-    packageFragments += packageFragmentProtos.asSequence()
-            .mapNotNull { it.fqName }
-            .flatMap { generateSequence(it) { it.parentOrNull() } }
-            .filter { it !in packageFqNames }
-            .distinct()
-            .map { EmptyPackageFragmentDescriptor(module, it) }
+    for (packageFqName in packageFqNames.mapNotNull { it.parentOrNull() }) {
+        var ancestorFqName = packageFqName
+        while (!ancestorFqName.isRoot && packageFqNames.add(ancestorFqName)) {
+            packageFragments += EmptyPackageFragmentDescriptor(module, ancestorFqName)
+            ancestorFqName = ancestorFqName.parent()
+        }
+    }
 
     val provider = PackageFragmentProviderImpl(packageFragments)
 
