@@ -162,9 +162,13 @@ object ByDescriptorIndexer : DecompiledTextIndexer<String> {
 
             if (declarationContainer != null) {
                 val descriptorName = original.name.asString()
-                val singleOrNull = declarationContainer.declarations.singleOrNull { it.name == descriptorName }
-                if (singleOrNull != null) {
-                    return singleOrNull
+                val matchedDeclarations = declarationContainer.declarations.filter { isMatch(it, descriptorName, original) }
+                when (matchedDeclarations.size) {
+                    0 -> return null // TODO: check!
+                    1 -> return matchedDeclarations.single()
+                    else -> {
+                        // Check with decompiled signature
+                    }
                 }
             }
         }
@@ -188,6 +192,27 @@ object ByDescriptorIndexer : DecompiledTextIndexer<String> {
 
     private fun DeclarationDescriptor.toStringKey(): String {
         return descriptorRendererForKeys.render(this)
+    }
+
+    private fun isMatch(declaration: KtDeclaration, name: String, memberDescriptor: MemberDescriptor): Boolean {
+        if (declaration.name != name) return false
+
+        when (memberDescriptor) {
+            is FunctionDescriptor -> {
+                if (declaration !is KtFunction) return false
+                if (declaration.valueParameters.size != memberDescriptor.valueParameters.size) return false
+                if (declaration.typeParameters.size != memberDescriptor.typeParameters.size) return false
+
+                val hasReceiverInDeclaration = declaration.receiverTypeReference != null
+                val hasReceiverInDescriptor = memberDescriptor.extensionReceiverParameter != null
+                if (hasReceiverInDeclaration != hasReceiverInDescriptor) return false
+            }
+            else -> {
+                // No specific matching for other descriptors - matching names is enough
+            }
+        }
+
+        return true
     }
 
     private val descriptorRendererForKeys = DescriptorRenderer.COMPACT_WITH_MODIFIERS.withOptions {

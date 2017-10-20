@@ -99,12 +99,15 @@ private fun findDeclarationInCompiledFile(file: KtClsFile, member: PsiMember, si
             }
         }
 
-        val declaration = container?.declarations?.singleOrNull {
-            it.name == memberName
-        }
-
-        if (declaration != null) {
-            return declaration
+        if (container != null) {
+            val matchedDeclarations = container.declarations.filter { it.name == memberName }
+            when (matchedDeclarations.size) {
+                0 -> return null // TODO: Check
+                1 -> return matchedDeclarations.first()
+                else -> {
+                    // Many declarations found, search with decompiled text
+                }
+            }
         }
     }
 
