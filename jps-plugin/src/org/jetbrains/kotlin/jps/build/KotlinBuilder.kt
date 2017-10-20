@@ -648,10 +648,15 @@ class KotlinBuilder : ModuleLevelBuilder(BuilderCategory.SOURCE_PROCESSOR) {
         val compilerSettings = JpsKotlinCompilerSettings.getCompilerSettings(representativeModule)
         val k2JsArguments = JpsKotlinCompilerSettings.getK2JsCompilerArguments(representativeModule)
 
-        val sourceRoots = representativeModule.contentRootsList.urls
-                .map { URI.create(it) }
-                .filter { it.scheme == "file" }
-                .map { File(it.path) }
+        val sourceRoots = if (k2JsArguments.sourceMapPrefix.isNullOrBlank()) {
+            emptyList()
+        }
+        else {
+            representativeModule.contentRootsList.urls
+                    .map { URI.create(it) }
+                    .filter { it.scheme == "file" }
+                    .map { File(it.path) }
+        }
 
         val friendPaths = KotlinBuilderModuleScriptGenerator.getProductionModulesWhichInternalsAreVisible(representativeTarget).mapNotNull {
             val file = getOutputMetaFile(it, false)
