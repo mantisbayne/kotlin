@@ -87,13 +87,15 @@ private fun findDeclarationInCompiledFile(file: KtClsFile, member: PsiMember, si
 
     val memberName = member.name
 
-    if (memberName != null && !file.isContentsLoaded && file.hasDeclarationWithKey(ByJvmSignatureIndexer, key)) {
-        val container: KtDeclarationContainer? = if (relativeClassName.isEmpty())
-            file
-        else {
-            val topClassOrObject = file.declarations.singleOrNull() as? KtClassOrObject
-            relativeClassName.fold(topClassOrObject) { classOrObject, name ->
-                classOrObject?.declarations?.singleOrNull { it.name == name.asString() } as? KtClassOrObject
+    if (memberName != null && !file.isContentsLoaded) {
+        val container: KtDeclarationContainer? = when {
+            relativeClassName.isEmpty() ->
+                file
+            else -> {
+                val topClassOrObject = file.declarations.singleOrNull() as? KtClassOrObject
+                relativeClassName.fold(topClassOrObject) { classOrObject, name ->
+                    classOrObject?.declarations?.singleOrNull { it.name == name.asString() } as? KtClassOrObject
+                }
             }
         }
 

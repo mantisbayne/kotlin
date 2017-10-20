@@ -31,10 +31,7 @@ import org.jetbrains.kotlin.idea.decompiler.textBuilder.DecompiledTextIndexer
 import org.jetbrains.kotlin.idea.stubindex.*
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.load.kotlin.JvmBuiltInsSettings
-import org.jetbrains.kotlin.psi.KtCallableDeclaration
-import org.jetbrains.kotlin.psi.KtClassOrObject
-import org.jetbrains.kotlin.psi.KtDeclaration
-import org.jetbrains.kotlin.psi.KtDeclarationContainer
+import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.renderer.DescriptorRenderer
 import org.jetbrains.kotlin.renderer.DescriptorRendererModifier
 import org.jetbrains.kotlin.resolve.DescriptorUtils
@@ -155,35 +152,30 @@ object ByDescriptorIndexer : DecompiledTextIndexer<String> {
             return classOrObject?.primaryConstructor ?: classOrObject
         }
 
-        val descriptorKey = original.toStringKey()
-
         if (!file.isContentsLoaded && original is MemberDescriptor) {
-            val hasDeclarationByKey = file.hasDeclarationWithKey(this, descriptorKey) ||
-                                      (getBuiltinsDescriptorKey(descriptor)?.let { file.hasDeclarationWithKey(this, it) } ?: false)
-            if (hasDeclarationByKey) {
-                val declarationContainer: KtDeclarationContainer? = when {
-                    DescriptorUtils.isTopLevelDeclaration(original) -> file
-                    original.containingDeclaration is ClassDescriptor ->
-                        getDeclarationForDescriptor(original.containingDeclaration as ClassDescriptor, file) as? KtClassOrObject
-                    else -> null
-                }
+            val declarationContainer: KtDeclarationContainer? = when {
+                DescriptorUtils.isTopLevelDeclaration(original) -> file
+                original.containingDeclaration is ClassDescriptor ->
+                    getDeclarationForDescriptor(original.containingDeclaration as ClassDescriptor, file) as? KtClassOrObject
+                else -> null
+            }
 
-                if (declarationContainer != null) {
-                    val descriptorName = original.name.asString()
-                    val singleOrNull = declarationContainer.declarations.singleOrNull { it.name == descriptorName }
-                    if (singleOrNull != null) {
-                        return singleOrNull
-                    }
+            if (declarationContainer != null) {
+                val descriptorName = original.name.asString()
+                val singleOrNull = declarationContainer.declarations.singleOrNull { it.name == descriptorName }
+                if (singleOrNull != null) {
+                    return singleOrNull
                 }
             }
         }
 
+        val descriptorKey = original.toStringKey()
         return file.getDeclaration(this, descriptorKey) ?: run {
             return getBuiltinsDescriptorKey(descriptor)?.let { file.getDeclaration(this, it) }
         }
     }
 
-    fun getBuiltinsDescriptorKey(descriptor: DeclarationDescriptor): String? {
+    private fun getBuiltinsDescriptorKey(descriptor: DeclarationDescriptor): String? {
         if (descriptor !is ClassDescriptor) return null
 
         val classFqName = descriptor.fqNameUnsafe
