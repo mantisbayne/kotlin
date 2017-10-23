@@ -17,6 +17,7 @@
 package org.jetbrains.kotlin.backend.common
 
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.PropertyGetterDescriptor
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.DescriptorEquivalenceForOverrides
@@ -25,6 +26,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.module
 
 val SUSPEND_COROUTINE_OR_RETURN_NAME = Name.identifier("suspendCoroutineOrReturn")
 val COROUTINE_SUSPENDED_NAME = Name.identifier("COROUTINE_SUSPENDED")
+val COROUTINE_CONTEXT_NAME = Name.identifier("coroutineContext")
 
 val COROUTINES_INTRINSICS_PACKAGE_FQ_NAME = DescriptorUtils.COROUTINES_PACKAGE_FQ_NAME.child(Name.identifier("intrinsics"))
 
@@ -42,3 +44,6 @@ fun FunctionDescriptor.getBuiltInSuspendCoroutineOrReturn() =
         module.getPackage(COROUTINES_INTRINSICS_PACKAGE_FQ_NAME).memberScope
                 .getContributedFunctions(SUSPEND_COROUTINE_OR_RETURN_NAME, NoLookupLocation.FROM_BACKEND)
                 .singleOrNull()
+
+fun FunctionDescriptor.isBuiltInCoroutineContext() =
+        (this as? PropertyGetterDescriptor)?.correspondingProperty?.name == COROUTINE_CONTEXT_NAME

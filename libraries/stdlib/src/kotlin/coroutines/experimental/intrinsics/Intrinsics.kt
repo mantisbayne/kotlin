@@ -46,6 +46,18 @@ public inline suspend fun <T> suspendCoroutineOrReturn(crossinline block: (Conti
         throw NotImplementedError("Implementation is intrinsic")
 
 /**
+ * Continuation context of current coroutine.
+ *
+ * This allows the user code to not pass an extra [CoroutineContext] parameter in basic coroutine builders like [launch] and [async],
+ * but still provide easy access to coroutine context.
+ */
+@SinceKotlin("1.2")
+public inline val coroutineContext: CoroutineContext
+    get() {
+        throw NotImplementedError("Implemented as intrinsic")
+    }
+
+/**
  * This value is used as a return value of [suspendCoroutineOrReturn] `block` argument to state that
  * the execution was suspended and will not return any result immediately.
  */

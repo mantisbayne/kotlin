@@ -338,6 +338,10 @@ public class JsInliner extends JsVisitorWithContextImpl {
             inlineSuspendWithCurrentContinuation(call, context);
             return;
         }
+        if (isCoroutineContextGetter(callDescriptor)) {
+            inlineCoroutineContextGetter(context);
+            return;
+        }
 
         JsInliningContext inliningContext = getInliningContext();
         FunctionWithWrapper functionWithWrapper = inliningContext.getFunctionContext().getFunctionDefinition(call);
@@ -505,6 +509,18 @@ public class JsInliner extends JsVisitorWithContextImpl {
         JsInvocation invocation = new JsInvocation(lambda, continuationArg);
         MetadataProperties.setSuspend(invocation, true);
         context.replaceMe(accept(invocation));
+    }
+
+    private static boolean isCoroutineContextGetter(@Nullable DeclarationDescriptor descriptor) {
+        if (!(descriptor instanceof FunctionDescriptor)) return false;
+        return CommonCoroutineCodegenUtilKt.isBuiltInCoroutineContext((FunctionDescriptor) descriptor);
+    }
+
+    private void inlineCoroutineContextGetter(@NotNull JsContext context) {
+        JsFunction function = getCurrentNamedFunction();
+        if (function == null) return;
+        JsNameRef continuation = function.getParameters().get(0).getName().makeRef();
+        context.replaceMe(accept(new JsNameRef("context", continuation)));
     }
 
     @NotNull
