@@ -16,15 +16,12 @@
 
 package org.jetbrains.kotlin.idea.actions.internal
 
+import com.intellij.diff.DiffContentFactory
+import com.intellij.diff.DiffManager
+import com.intellij.diff.requests.SimpleDiffRequest
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
-import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.diff.DiffManager
-import com.intellij.openapi.diff.SimpleContent
-import com.intellij.openapi.diff.SimpleDiffRequest
-import com.intellij.openapi.diff.ex.DiffPanelOptions
-import com.intellij.openapi.diff.impl.DiffPanelImpl
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.project.Project
@@ -79,15 +76,14 @@ class CheckPartialBodyResolveAction : AnAction() {
                 SwingUtilities.invokeLater {
                     val title = "Difference Found in File ${file.virtualFile.path}"
 
-                    val request = SimpleDiffRequest(project, title)
-                    request.setContents(SimpleContent(goldDump), SimpleContent(partialResolveDump))
-                    request.setContentTitles("Expected", "Partial Body Resolve")
                     val diffBuilder = DialogBuilder(project)
-                    val diffPanel = DiffManager.getInstance().createDiffPanel(diffBuilder.window, project, diffBuilder, null) as DiffPanelImpl
-                    diffPanel.options.setShowSourcePolicy(DiffPanelOptions.ShowSourcePolicy.DONT_SHOW)
+                    val diffPanel = DiffManager.getInstance().createRequestPanel(project, diffBuilder, diffBuilder.window)
+                    val expected = DiffContentFactory.getInstance().create(goldDump)
+                    val actual = DiffContentFactory.getInstance().create(partialResolveDump)
+                    diffPanel.setRequest(SimpleDiffRequest(title, expected, actual, "Expected", "Partial Body Resolve"))
+
                     diffBuilder.setCenterPanel(diffPanel.component)
                     diffBuilder.setDimensionServiceKey("org.jetbrains.kotlin.idea.actions.internal.CheckPartialBodyResolveAction.Diff")
-                    diffPanel.setDiffRequest(request)
                     diffBuilder.addOkAction().setText("Close")
                     diffBuilder.setTitle(title)
                     diffBuilder.showNotModal()
