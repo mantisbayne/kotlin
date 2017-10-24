@@ -109,4 +109,6 @@ function imul(a, b) {
     }
 })();
 
-
+Kotlin.nullCheck = function(x) {
+    return x != null ? x : Kotlin.throwNPE();
+};
