@@ -52,6 +52,7 @@ public inline suspend fun <T> suspendCoroutineOrReturn(crossinline block: (Conti
  * but still provide easy access to coroutine context.
  */
 @SinceKotlin("1.2")
+@Suppress("WRONG_MODIFIER_TARGET")
 public inline val coroutineContext: CoroutineContext
     get() {
         throw NotImplementedError("Implemented as intrinsic")

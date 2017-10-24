@@ -5,10 +5,7 @@ import kotlin.coroutines.experimental.*
 import kotlin.coroutines.experimental.intrinsics.*
 import kotlin.test.assertEquals
 
-suspend fun suspendHere(): String = suspendCoroutineOrReturn { x ->
-    x.resume(if(coroutineContext != EmptyCoroutineContext) "$coroutineContext != $EmptyCoroutineContext" else "OK")
-    COROUTINE_SUSPENDED
-}
+suspend fun suspendHere() = if(coroutineContext != EmptyCoroutineContext) "$coroutineContext != $EmptyCoroutineContext" else "OK"
 
 fun builder(c: suspend () -> String): String {
     var fromSuspension: String? = null

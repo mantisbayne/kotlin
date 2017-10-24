@@ -10,9 +10,9 @@ suspend fun mustBeTailCall(): String {
     return suspendHere(coroutineContext)
 }
 
-suspend fun coroutineContext(): CoroutineContext =
+suspend fun retrieveCoroutineContext(): CoroutineContext =
         suspendCoroutineOrReturn { cont -> cont.context }
 
 suspend fun notTailCall(): String {
-    return suspendHere(coroutineContext())
+    return suspendHere(retrieveCoroutineContext())
 }
