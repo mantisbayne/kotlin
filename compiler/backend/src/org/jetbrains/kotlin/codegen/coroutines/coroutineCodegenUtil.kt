@@ -306,14 +306,6 @@ fun createMethodNodeForCoroutineContext(functionDescriptor: FunctionDescriptor):
     node.visitVarInsn(Opcodes.ALOAD, 0)
 
     node.visitMethodInsn(
-            Opcodes.INVOKESTATIC,
-            INTERNAL_COROUTINE_INTRINSICS_OWNER_INTERNAL_NAME,
-            NORMALIZE_CONTINUATION_METHOD_NAME,
-            Type.getMethodDescriptor(CONTINUATION_ASM_TYPE, CONTINUATION_ASM_TYPE),
-            false
-    )
-
-    node.visitMethodInsn(
             Opcodes.INVOKEINTERFACE,
             CONTINUATION_ASM_TYPE.internalName,
             GET_CONTEXT_METHOD_NAME,

@@ -223,9 +223,11 @@ abstract class InlineCodegen<out T: BaseExpressionCodegen>(
         return true
     }
 
-    private fun insideStatic(): Boolean {
+    private fun continuationIndex(): Int {
         codegen as ExpressionCodegen
-        return AsmUtil.isStaticMethod(codegen.context.contextKind, codegen.context.functionDescriptor)
+        val isStatic = AsmUtil.isStaticMethod(codegen.context.contextKind, codegen.context.functionDescriptor)
+        // 0 for this, and last for continuation
+        return codegen.context.functionDescriptor.valueParameters.size - 1 + (if (isStatic) 0 else 1)
     }
 
     protected fun inlineCall(nodeAndSmap: SMAPAndMethodNode, callDefault: Boolean): InlineResult {
@@ -259,7 +261,7 @@ abstract class InlineCodegen<out T: BaseExpressionCodegen>(
             invocationParamBuilder.addNextValueParameter(
                     CONTINUATION_ASM_TYPE,
                     false,
-                    StackValue.local(if (insideStatic()) 0 else 1, CONTINUATION_ASM_TYPE),
+                    StackValue.local(continuationIndex(), CONTINUATION_ASM_TYPE),
                     0
             )
         }
@@ -470,31 +472,31 @@ abstract class InlineCodegen<out T: BaseExpressionCodegen>(
                 state: GenerationState,
                 sourceCompilerForInline: SourceCompilerForInline
         ): SMAPAndMethodNode {
-            if (isSpecialEnumMethod(functionDescriptor)) {
-                val arguments = resolvedCall!!.typeArguments
+            val res = when {
+                isSpecialEnumMethod(functionDescriptor) -> {
+                    val arguments = resolvedCall!!.typeArguments
 
-                val node = createSpecialEnumMethodBody(
-                        codegen,
-                        functionDescriptor.name.asString(),
-                        arguments.keys.single().defaultType,
-                        state.typeMapper
-                )
-                return SMAPAndMethodNode(node, SMAPParser.parseOrCreateDefault(null, null, "fake", -1, -1))
-            }
-            else if (functionDescriptor.isBuiltInSuspendCoroutineOrReturnInJvm()) {
-                return SMAPAndMethodNode(
+                    val node = createSpecialEnumMethodBody(
+                            codegen,
+                            functionDescriptor.name.asString(),
+                            arguments.keys.single().defaultType,
+                            state.typeMapper
+                    )
+                    SMAPAndMethodNode(node, SMAPParser.parseOrCreateDefault(null, null, "fake", -1, -1))
+                }
+                functionDescriptor.isBuiltInSuspendCoroutineOrReturnInJvm() -> SMAPAndMethodNode(
                         createMethodNodeForSuspendCoroutineOrReturn(
                                 functionDescriptor, state.typeMapper
                         ),
                         SMAPParser.parseOrCreateDefault(null, null, "fake", -1, -1)
                 )
-            }
-            else if (functionDescriptor.isBuiltInCoroutineContext()) {
-                return SMAPAndMethodNode(
+                functionDescriptor.isBuiltInCoroutineContext() -> SMAPAndMethodNode(
                         createMethodNodeForCoroutineContext(functionDescriptor),
                         SMAPParser.parseOrCreateDefault(null, null, "fake", -1, -1)
                 )
+                else -> null
             }
+            if (res != null) return res
 
             val asmMethod = if (callDefault)
                 state.typeMapper.mapDefaultMethod(functionDescriptor, sourceCompilerForInline.contextKind)
